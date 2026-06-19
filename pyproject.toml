@@ -1,0 +1,49 @@
+[project]
+name = "opencode-telegram"
+version = "0.1.0"
+description = "Telegram bridge for controlling one local opencode instance"
+readme = "README.md"
+authors = [
+    { name = "Joao Marcos", email = "87662918+joaomj@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.1",
+    "python-telegram-bot>=22.7",
+]
+
+[project.scripts]
+opencode-telegram = "opencode_telegram:main"
+
+[build-system]
+requires = ["uv_build>=0.11.16,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.1.0",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.17",
+]
+
+[tool.uv]
+exclude-newer = "2026-06-12T00:00:00Z"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG", "SIM", "PTH", "PL", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src/opencode_telegram"]
