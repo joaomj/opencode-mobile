@@ -18,15 +18,39 @@ The bot forwards your Telegram messages to opencode's HTTP API and streams respo
 
 ## Prerequisites
 
-- **Python 3.11+**
+- **Python 3.11+** (this project requires `>=3.11`; tested with 3.11–3.13)
 - **uv** (fast Python package manager) — install with:
   ```bash
   curl -LsSf https://astral.sh/uv/install.sh | sh
   ```
-- A running [opencode](https://github.com/anomalyco/opencode) server with its REST API enabled.  
-  See [Running the opencode server](https://opencode.ai/docs/settings#server) for setup instructions.
+- A running [opencode](https://github.com/anomalyco/opencode) server with its REST API enabled (see below).
 - A **Telegram bot token** from [@BotFather](https://t.me/BotFather)
 - Your **Telegram user ID** (use [@userinfobot](https://t.me/userinfobot) to find it)
+
+### Running the opencode server with logs
+
+See the [opencode server docs](https://opencode.ai/docs/server/) for full setup instructions.
+
+By default, opencode writes logs only to files at `~/.local/share/opencode/log/`. To see logs in the terminal:
+
+```bash
+# Server mode with terminal logs
+opencode serve --print-logs
+
+# With verbose debug output
+opencode serve --print-logs --log-level DEBUG
+
+# CLI mode (non-server) with terminal logs
+opencode --print-logs
+```
+
+You can also set a persistent log level in `~/.config/opencode/opencode.jsonc`:
+
+```jsonc
+{
+  "logLevel": "DEBUG"
+}
+```
 
 ## Quick Start
 
@@ -120,8 +144,8 @@ The bot needs the opencode server running alongside it. Use `tmux` to keep both 
 # Start or resume a tmux session
 tmux new -s opencode
 
-# In pane 1: start the opencode server
-# (run whatever command you normally use to start opencode)
+# In pane 1: start the opencode server with visible logs
+opencode serve --print-logs
 
 # Split the window (Ctrl+b, ")
 # In pane 2: start the bot
@@ -145,16 +169,45 @@ You'll see a control panel with buttons. From here you can create sessions, send
 
 ## Features
 
-| Command | Action |
+### Telegram commands
+
+| Input | Action |
 |---|---|
 | `/start` | Show the control panel |
-| `/session` | List and switch between coding sessions |
+| Any text message | Send as a prompt to the current session |
+| Any opencode native command | See supported native commands below |
+| Callback buttons | Navigate agents, models, sessions interactively |
+
+### Supported opencode native commands
+
+These opencode native commands work as Telegram slash commands (e.g. `/new`, `/sessions`):
+
+| Command | Action |
+|---|---|
+| `/new` | Start a new session |
+| `/clear` | Clear the current session |
+| `/sessions` | List and switch between sessions |
+| `/resume` or `/continue` | Resume a previous session |
 | `/agents` | Select an AI agent |
 | `/models` | Select a model provider/model |
-| `/new` | Create a new session |
-| `/compact` | Compact the current session |
-| Any text | Send as a prompt to the current session |
-| Callback buttons | Navigate agents, models, sessions interactively |
+| `/compact` or `/summarize` | Compact / summarize the current session |
+| `/help` | Show available commands |
+| `/init` | Run guided AGENTS.md setup |
+| `/share` | Share the current session |
+| `/unshare` | Unshare the current session |
+| `/undo` | Undo the last message |
+| `/redo` | Redo a previously undone message |
+| `/exit`, `/quit`, or `/q` | End the current session |
+
+### Unsupported TUI-only commands
+
+These opencode TUI commands are **not** available via the Telegram bridge:
+
+`/connect`, `/details`, `/editor`, `/export`, `/themes`, `/thinking`
+
+### Dynamic commands from the server
+
+Any commands registered on the opencode server (via plugins, custom tools, etc.) are automatically loaded at startup and available as Telegram slash commands. The bot fetches them from the server's `/command` endpoint on every launch.
 
 ## Configuration
 
@@ -187,22 +240,6 @@ uv run ruff check .
 uv run pytest -v && uv run mypy && uv run ruff check .
 ```
 
-### Project Structure
-
-```
-src/opencode_telegram/
-├── __init__.py          # Entry point: main()
-├── __main__.py          # python -m support
-├── bot.py               # Core bot logic and event handlers
-├── buttons.py           # Telegram inline keyboard builders
-├── commands.py          # Slash command parser
-├── config.py            # Pydantic settings loader
-├── format.py            # Message splitting/truncation
-├── native_commands.py   # Native opencode command mapping
-├── opencode_client.py   # HTTP client for opencode REST API
-└── session_state.py     # Per-chat session/agent/model state
-```
-
 ## Architecture
 
 - **Single-user**: Only `TELEGRAM_ALLOWED_USER_ID` is authorized
@@ -213,4 +250,6 @@ src/opencode_telegram/
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for details.
+
+Copyright (c) 2025-2026 Joao Marcos Visotaky Junior
