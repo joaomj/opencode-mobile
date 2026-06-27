@@ -31,6 +31,12 @@ The bot forwards your Telegram messages to opencode's HTTP API and streams respo
 
 See the [opencode server docs](https://opencode.ai/docs/server/) for full setup instructions.
 
+From the repo root, start the server in a terminal with:
+
+```bash
+opencode serve --print-logs
+```
+
 By default, opencode writes logs only to files at `~/.local/share/opencode/log/`. To see logs in the terminal:
 
 ```bash
@@ -118,14 +124,20 @@ OPENCODE_SERVER_PASSWORD=your-password-here
 
 Save the file.
 
-### 5. Start the bot
+### 5. Start the services
+
+Open two terminals in the repo root.
+
+Terminal 1 starts the opencode server:
 
 ```bash
-# Activate the virtual environment
-source .venv/bin/activate
+opencode serve --print-logs
+```
 
-# Run the bot
-opencode-telegram
+Terminal 2 starts the Telegram bot:
+
+```bash
+uv run opencode-telegram
 ```
 
 You should see log output like:
@@ -138,19 +150,18 @@ If you see errors, double-check your `.env` values.
 
 ### 6. Keep both services running with tmux
 
-The bot needs the opencode server running alongside it. Use `tmux` to keep both alive in the background:
+If you want both services in one `tmux` session, run the same commands in separate panes:
 
 ```bash
 # Start or resume a tmux session
 tmux new -s opencode
 
-# In pane 1: start the opencode server with visible logs
+# In pane 1: start the opencode server
 opencode serve --print-logs
 
 # Split the window (Ctrl+b, ")
 # In pane 2: start the bot
-source .venv/bin/activate
-opencode-telegram
+uv run opencode-telegram
 ```
 
 Now detach from tmux (`Ctrl+b, d`) — both services keep running. Reattach later with `tmux a -t opencode`.
@@ -223,6 +234,9 @@ All configuration lives in `.env`. See `.env.example` for all options:
 | `LOG_LEVEL` | No | `INFO` | Logging verbosity |
 | `LOG_FILE` | No | `logs/opencode-telegram.log` | Log file path |
 | `TELEGRAM_HTTP_LOGS` | No | `false` | Enable HTTP request logging |
+| `TELEGRAM_EDIT_INTERVAL_SECONDS` | No | `1.0` | Minimum seconds between live stream edits |
+| `EVENT_RECONNECT_INITIAL_SECONDS` | No | `1.0` | Initial SSE reconnect backoff |
+| `EVENT_RECONNECT_MAX_SECONDS` | No | `30.0` | Maximum SSE reconnect backoff |
 
 ## Development
 
@@ -245,7 +259,8 @@ uv run pytest -v && uv run mypy && uv run ruff check .
 - **Single-user**: Only `TELEGRAM_ALLOWED_USER_ID` is authorized
 - **Stateless HTTP**: Talks to opencode via its REST API (no WebSocket)
 - **In-memory state**: Per-chat session, agent, and model selection kept in memory (async-locked `SessionState`)
-- **SSE logging**: Optionally subscribes to opencode's SSE event stream for live logging
+- **SSE streaming**: A single shared SSE consumer parses `message.part.updated` events and streams assistant text back to Telegram (one message, edited ~1/sec)
+- **Permission prompts**: `permission.updated` events are surfaced as inline Allow/Deny buttons in Telegram
 - **All polls, no webhooks**: Uses Telegram polling (simple, no public endpoint needed)
 
 ## License
