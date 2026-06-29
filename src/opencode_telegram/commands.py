@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from opencode_telegram.opencode_client import Command
+from opencode_telegram.models import Command
 
 
 class ParsedCommand(BaseModel):

@@ -24,3 +24,10 @@ def test_plain_text_is_not_a_slash_command() -> None:
     result = resolve_slash_command("please plan", commands)
 
     assert result is None
+
+
+def test_command_coerces_null_description_to_empty_str() -> None:
+    cmd = Command.model_validate({"name": "plan", "description": None})
+
+    assert cmd.name == "plan"
+    assert cmd.description == ""
