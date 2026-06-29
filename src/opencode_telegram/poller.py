@@ -17,10 +17,10 @@ def _format_permission_text(req: PermissionRequest) -> str:
     lines = [f"*Permission request:* {req.permission}"]
     cmd = req.metadata.get("command")
     if cmd:
-        lines.append(f"")
+        lines.append("")
         lines.append(f"```\n{cmd}\n```")
     if req.patterns:
-        lines.append(f"")
+        lines.append("")
         lines.append(f"matches: `{req.patterns[0]}`")
         if len(req.patterns) > 1:
             for p in req.patterns[1:]:
