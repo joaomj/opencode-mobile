@@ -3,7 +3,7 @@ import sys
 
 from pydantic import ValidationError
 
-from opencode_telegram.bot import run_bot
+from opencode_telegram.startup import run_bot
 
 
 def main() -> None:

@@ -28,3 +28,16 @@ def test_build_telegram_commands_skips_invalid_telegram_names() -> None:
     assert "valid_name" in names
     assert "invalid-name" not in names
     assert "UPPER" not in names
+
+
+def test_build_telegram_commands_excludes_skill_commands() -> None:
+    custom = [
+        Command(name="my_command", description="Made by me", source="command"),
+        Command(name="skill_command", description="From a skill", source="skill"),
+    ]
+
+    result = build_telegram_commands(custom)
+
+    names = [c.command for c in result]
+    assert "my_command" in names
+    assert "skill_command" not in names
