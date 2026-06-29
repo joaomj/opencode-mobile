@@ -162,6 +162,10 @@ prompts and commands that may trigger permission prompts.
 | `OPENCODE_REQUEST_TIMEOUT_SECONDS` | `200.0` | Global HTTP timeout |
 | `LOG_LEVEL` | `INFO` | Logging verbosity |
 | `LOG_FILE` | `logs/opencode-telegram.log` | Log file path |
+| `LOG_MAX_BYTES` | `1048576` | Max bytes per log file before rotation |
+| `LOG_BACKUP_COUNT` | `7` | Number of backup log files |
+| `LOG_RETENTION_DAYS` | `7` | Days to retain old log files |
+| `TELEGRAM_MESSAGE_LIMIT` | `4096` | Max Telegram message length |
 | `TELEGRAM_HTTP_LOGS` | `false` | Enable HTTP request logging |
 | `BRIDGE_DB_PATH` | `~/.local/state/…/bridge.db` | BridgeDB path |
 | `OPENCODE_STARTUP_RETRIES` | `5` | Server connection retries |
@@ -173,7 +177,7 @@ prompts and commands that may trigger permission prompts.
 2. If none → `POST /session` creates a new one → stored in BridgeDB + in-memory
 3. All subsequent messages use same session until `/new` or `/exit`
 4. Session persists in BridgeDB across bot restarts
-5. `/abort` sends `POST /session/{id}/abort` to the server
+5. The Stop button (`c:stop`) sends `POST /session/{id}/abort` to the server
 
 ## Permission Reply Values
 

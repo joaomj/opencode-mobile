@@ -132,6 +132,10 @@ All settings are environment variables in `.env`. See `.env.example` for default
 | `OPENCODE_REQUEST_TIMEOUT_SECONDS` | No | `200.0` | Global HTTP timeout |
 | `LOG_LEVEL` | No | `INFO` | Logging verbosity |
 | `LOG_FILE` | No | `logs/opencode-telegram.log` | Log file path |
+| `LOG_MAX_BYTES` | No | `1048576` | Max bytes per log file before rotation |
+| `LOG_BACKUP_COUNT` | No | `7` | Number of backup log files |
+| `LOG_RETENTION_DAYS` | No | `7` | Days to retain old log files |
+| `TELEGRAM_MESSAGE_LIMIT` | No | `4096` | Max Telegram message length |
 | `TELEGRAM_HTTP_LOGS` | No | `false` | Enable HTTP request logging |
 | `BRIDGE_DB_PATH` | No | `~/.local/state/…/bridge.db` | SQLite path for session mapping |
 | `OPENCODE_STARTUP_RETRIES` | No | `5` | Retries on server connect |
