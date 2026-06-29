@@ -5,6 +5,9 @@ from pydantic import AnyHttpUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_ENV_FILE = Path(".env")
+DEFAULT_BRIDGE_DB_PATH = (
+    Path.home() / ".local" / "state" / "opencode-telegram" / "bridge.db"
+)
 
 
 class Settings(BaseSettings):
@@ -27,14 +30,16 @@ def load_settings(env_file: Path = DEFAULT_ENV_FILE) -> Settings:
 
 class RuntimeConfig(BaseSettings):
     telegram_message_limit: int = 4096
-    opencode_request_timeout_seconds: float = 120.0
+    opencode_request_timeout_seconds: float = 200.0
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
-    opencode_event_logs: bool = True
     telegram_http_logs: bool = False
     log_file: str = "logs/opencode-telegram.log"
-    log_max_bytes: int = 5242880
-    log_backup_count: int = 1
-    prompt_poll_interval_seconds: float = 2.0
+    log_max_bytes: int = 1048576
+    log_backup_count: int = 7
+    log_retention_days: int = 7
+    bridge_db_path: str = str(DEFAULT_BRIDGE_DB_PATH)
+    opencode_startup_retries: int = 5
+    opencode_startup_retry_delay_seconds: float = 2.0
 
     model_config = SettingsConfigDict(
         env_file=DEFAULT_ENV_FILE,

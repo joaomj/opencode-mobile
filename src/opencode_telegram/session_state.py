@@ -1,50 +1,68 @@
 import asyncio
 from itertools import count
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
+
+from opencode_telegram.bridge_db import BridgeDB
 
 
-class ModelSelection(BaseModel):
-    provider_id: str = Field(alias="providerID")
-    model_id: str = Field(alias="modelID")
-
-    model_config = ConfigDict(populate_by_name=True)
+class PermissionRegistration(BaseModel):
+    session_id: str
+    request_id: str
 
 
 class SessionState:
-    def __init__(self) -> None:
+    def __init__(self, bridge_db: BridgeDB | None = None) -> None:
+        self._bridge_db = bridge_db
         self._active_by_chat: dict[int, str] = {}
-        self._agent_by_chat: dict[int, str] = {}
-        self._model_by_chat: dict[int, ModelSelection] = {}
-        self._model_options: dict[str, ModelSelection] = {}
-        self._model_option_counter = count(1)
+        self._permissions: dict[str, PermissionRegistration] = {}
+        self._permission_counter = count(1)
+        self._chat_by_session: dict[str, int] = {}
         self._lock = asyncio.Lock()
 
     def get_active(self, chat_id: int) -> str | None:
+        if self._bridge_db is not None:
+            return self._bridge_db.get_active(chat_id)
         return self._active_by_chat.get(chat_id)
 
     def set_active(self, chat_id: int, session_id: str) -> None:
+        if self._bridge_db is not None:
+            self._bridge_db.set_active(chat_id=chat_id, session_id=session_id)
+            self._chat_by_session[session_id] = chat_id
+            return
         self._active_by_chat[chat_id] = session_id
+        self._chat_by_session[session_id] = chat_id
 
-    def get_agent(self, chat_id: int) -> str | None:
-        return self._agent_by_chat.get(chat_id)
+    def get_chat_for_session(self, session_id: str) -> int | None:
+        if self._bridge_db is not None:
+            return self._bridge_db.get_chat_for_session(session_id)
+        return self._chat_by_session.get(session_id)
 
-    def set_agent(self, chat_id: int, agent: str) -> None:
-        self._agent_by_chat[chat_id] = agent
+    def register_permission(self, session_id: str, request_id: str) -> str:
+        short_id = f"p{next(self._permission_counter)}"
+        self._permissions[short_id] = PermissionRegistration(
+            session_id=session_id,
+            request_id=request_id,
+        )
+        return short_id
 
-    def get_model(self, chat_id: int) -> ModelSelection | None:
-        return self._model_by_chat.get(chat_id)
+    def get_permission(self, short_id: str) -> PermissionRegistration | None:
+        return self._permissions.get(short_id)
 
-    def set_model(self, chat_id: int, provider_id: str, model_id: str) -> None:
-        self._model_by_chat[chat_id] = ModelSelection(providerID=provider_id, modelID=model_id)
+    def remove_permission(self, request_id: str) -> None:
+        to_remove = [
+            short_id
+            for short_id, reg in self._permissions.items()
+            if reg.request_id == request_id
+        ]
+        for short_id in to_remove:
+            self._permissions.pop(short_id, None)
 
-    def register_model_option(self, provider_id: str, model_id: str) -> str:
-        option_id = f"m{next(self._model_option_counter)}"
-        self._model_options[option_id] = ModelSelection(providerID=provider_id, modelID=model_id)
-        return option_id
-
-    def get_model_option(self, option_id: str) -> ModelSelection | None:
-        return self._model_options.get(option_id)
+    def has_tracked_permission(self, request_id: str) -> bool:
+        return any(
+            reg.request_id == request_id
+            for reg in self._permissions.values()
+        )
 
     async def get_active_async(self, chat_id: int) -> str | None:
         async with self._lock:
@@ -54,26 +72,21 @@ class SessionState:
         async with self._lock:
             self.set_active(chat_id=chat_id, session_id=session_id)
 
-    async def get_agent_async(self, chat_id: int) -> str | None:
+    async def get_chat_for_session_async(self, session_id: str) -> int | None:
         async with self._lock:
-            return self.get_agent(chat_id)
+            return self.get_chat_for_session(session_id=session_id)
 
-    async def set_agent_async(self, chat_id: int, agent: str) -> None:
+    async def register_permission_async(self, session_id: str, request_id: str) -> str:
         async with self._lock:
-            self.set_agent(chat_id=chat_id, agent=agent)
+            return self.register_permission(
+                session_id=session_id,
+                request_id=request_id,
+            )
 
-    async def get_model_async(self, chat_id: int) -> ModelSelection | None:
+    async def get_permission_async(self, short_id: str) -> PermissionRegistration | None:
         async with self._lock:
-            return self.get_model(chat_id)
+            return self.get_permission(short_id=short_id)
 
-    async def set_model_async(self, chat_id: int, provider_id: str, model_id: str) -> None:
+    async def remove_permission_async(self, request_id: str) -> None:
         async with self._lock:
-            self.set_model(chat_id=chat_id, provider_id=provider_id, model_id=model_id)
-
-    async def register_model_option_async(self, provider_id: str, model_id: str) -> str:
-        async with self._lock:
-            return self.register_model_option(provider_id=provider_id, model_id=model_id)
-
-    async def get_model_option_async(self, option_id: str) -> ModelSelection | None:
-        async with self._lock:
-            return self.get_model_option(option_id)
+            self.remove_permission(request_id=request_id)
